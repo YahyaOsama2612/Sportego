@@ -78,6 +78,7 @@ const Clubs = () => {
   const [subscriptionFilter, setSubscriptionFilter] = useState('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingClub, setEditingClub] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [formData, setFormData] = useState(initialForm);
   const [actionError, setActionError] = useState('');
 
@@ -205,12 +206,18 @@ const Clubs = () => {
     }
   };
 
-  const handleDelete = async (club) => {
-    if (!window.confirm(`Delete ${club.name || 'this club'}? This cannot be undone.`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const clubId = deleteTarget._id || deleteTarget.id;
+    if (!clubId) {
+      showError('This club does not have an ID and cannot be deleted.');
+      return;
+    }
     setActionError('');
     try {
-      await deleteClub(`/api/clubs/${club._id || club.id}`);
+      await deleteClub(`/api/clubs/${clubId}`);
       showSuccess('Club deleted successfully.');
+      setDeleteTarget(null);
       await refetch();
     } catch (deleteError) {
       const message = requestError(deleteError);
@@ -310,6 +317,7 @@ const Clubs = () => {
               ) : clubs.map((club, index) => {
                 const clubId = club._id || club.id || index;
                 const active = club.status === true || club.status === 'active';
+                const isDeleteTarget = deleteTarget === club;
                 return (
                   <tr key={clubId} className="hover:bg-gray-50/70">
                     <td className="px-5 py-4">
@@ -331,7 +339,15 @@ const Clubs = () => {
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="outline" onClick={() => openEdit(club)}>Edit</Button>
-                        <Button size="sm" variant="danger" loading={deleting} disabled={deleting} onClick={() => handleDelete(club)}>Delete</Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          loading={isDeleteTarget && deleting}
+                          disabled={isDeleteTarget && deleting}
+                          onClick={() => setDeleteTarget(club)}
+                        >
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -430,6 +446,60 @@ const Clubs = () => {
                 <Button type="submit" loading={isSaving}>{editingClub ? 'Save changes' : 'Create club'}</Button>
               </div>
             </form>
+          </section>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !deleting) setDeleteTarget(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="club-delete-title"
+            className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-2xl"
+          >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600 ring-8 ring-red-50/50">
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <h2 id="club-delete-title" className="text-lg font-bold text-gray-900">Delete club?</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              Are you sure you want to delete{' '}
+              <strong className="font-semibold text-gray-800">{deleteTarget.name || 'this club'}</strong>?
+              This action cannot be undone.
+            </p>
+            {actionError && (
+              <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{actionError}</p>
+            )}
+            <div className="mt-6 flex justify-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={deleting}
+                onClick={() => {
+                  setActionError('');
+                  setDeleteTarget(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                loading={deleting}
+                disabled={deleting}
+                onClick={handleDelete}
+              >
+                Confirm delete
+              </Button>
+            </div>
           </section>
         </div>
       )}

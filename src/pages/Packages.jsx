@@ -320,9 +320,14 @@ const Packages = () => {
   // Delete Package: DELETE /api/packages/{id}
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
+    const packageId = deleteTarget._id || deleteTarget.id;
+    if (!packageId) {
+      showError('This package does not have an ID and cannot be deleted.');
+      return;
+    }
 
     try {
-      await deletePackage(`/api/packages/${deleteTarget._id}`);
+      await deletePackage(`/api/packages/${packageId}`);
       showSuccess(`Package "${deleteTarget.name}" deleted successfully!`);
       setDeleteTarget(null);
       refetchPackages();
@@ -465,6 +470,8 @@ const Packages = () => {
             size="sm"
             variant="danger"
             onClick={() => setDeleteTarget(pkg)}
+            loading={deleteTarget === pkg && isDeleting}
+            disabled={deleteTarget === pkg && isDeleting}
             className="text-xs font-semibold"
           >
             Delete

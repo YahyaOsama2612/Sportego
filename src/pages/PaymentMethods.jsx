@@ -227,9 +227,14 @@ const PaymentMethods = () => {
   // Delete Method: DELETE /api/payment-methods/{id}
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
+    const methodId = deleteTarget._id || deleteTarget.id;
+    if (!methodId) {
+      showError('This payment method does not have an ID and cannot be deleted.');
+      return;
+    }
 
     try {
-      await deleteMethod(`/api/payment-methods/${deleteTarget._id}`);
+      await deleteMethod(`/api/payment-methods/${methodId}`);
       showSuccess(`Payment method "${deleteTarget.name}" deleted successfully!`);
       setDeleteTarget(null);
       refetchMethods();
@@ -367,6 +372,8 @@ const PaymentMethods = () => {
             size="sm"
             variant="danger"
             onClick={() => setDeleteTarget(method)}
+            loading={deleteTarget === method && isDeleting}
+            disabled={deleteTarget === method && isDeleting}
             className="text-xs font-semibold"
           >
             Delete
@@ -753,8 +760,8 @@ const PaymentMethods = () => {
 
             <p className="text-sm text-gray-600 leading-relaxed">
               Are you sure you want to delete payment method{' '}
-              <strong className="text-gray-900 font-bold">"{deleteTarget.name}"</strong>? Clubs
-              will no longer be able to select this payment option.
+              <strong className="text-gray-900 font-bold">"{deleteTarget.name}"</strong>? This
+              payment option will no longer be available to clubs.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">

@@ -130,10 +130,15 @@ const Games = () => {
   // Delete Game: DELETE /api/games/{id}
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
+    const gameId = deleteTarget._id || deleteTarget.id;
+    if (!gameId) {
+      showError('This game does not have an ID and cannot be deleted.');
+      return;
+    }
 
     try {
       // DELETE /api/games/{id} using useDelete hook
-      await deleteGame(`/api/games/${deleteTarget._id}`);
+      await deleteGame(`/api/games/${gameId}`);
       showSuccess(`Game "${deleteTarget.name}" deleted successfully!`);
       setDeleteTarget(null);
       refetchGames();
@@ -210,6 +215,8 @@ const Games = () => {
             size="sm"
             variant="danger"
             onClick={() => setDeleteTarget(row)}
+            loading={deleteTarget === row && isDeleting}
+            disabled={deleteTarget === row && isDeleting}
             className="text-xs"
           >
             Delete
